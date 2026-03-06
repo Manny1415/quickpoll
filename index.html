@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickPoll - Create & Vote on Polls</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --secondary: #9333ea;
+            --bg: #ffffff;
+            --accent: #f97316;
+            --dark-text: #1f2937;
+            --light-text: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+        }
+
+        :root.dark-mode {
+            --bg: #1f2937;
+            --dark-text: #f3f4f6;
+            --light-text: #d1d5db;
+            --border: #374151;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #fef3c7 0%, #fecdc3 100%);
+            color: var(--dark-text);
+            height: 100vh;
+            overflow: hidden;
+            transition: background 0.3s ease;
+        }
+
+        :root.dark-mode body {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            background: var(--bg);
+            position: relative;
+        }
+
+        .app-content {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* Auth Screens */
+        .auth-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            height: 100%;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--bg);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border);
+        }
+
+        .auth-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--dark-text);
+        }
+
+        .auth-subtitle {
+            color: var(--light-text);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7e22ce;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background: #ea580c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark-text);
+            font-size: 0.95rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            background: var(--bg);
+            color: var(--dark-text);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 2rem 0;
+            color: var(--light-text);
+            font-size: 0.9rem;
+        }
+
+        .divider::before {
+            content: '';
+            display: block;
+            height: 1px;
+            background: var(--border);
+            margin-bottom: 1rem;
+        }
+
+        .divider::after {
+            content: '';
+            display: block;
+            height: 1px;
+            background: var(--border);
+            margin-top: 1rem;
+        }
+
+        /* Home Screen */
+        .header {
+            padding: 1.5rem;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-text);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .search-box {
+            padding: 0.75rem 1rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            width: 100%;
+            max-width: 300px;
+            background: var(--bg);
+            color: var(--dark-text);
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .polls-container {
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .poll-card {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+        }
+
+        .poll-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .poll-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .poll-question {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .poll-meta {
+            font-size: 0.85rem;
+            color: var(--light-text);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .poll-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.3rem 0.8rem;
+            background: #fee2e2;
+            color: #991b1b;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .poll-status.active {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .poll-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .option {
+            padding: 0.75rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--bg);
+        }
+
+        .option:hover {
+            border-color: var(--primary);
+            background: #f0f9ff;
+        }
+
+        .option.voted {
+            border-color: var(--primary);
+            background: #eff6ff;
+            cursor: default;
+        }
+
+        .option-content {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .option-radio {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .option:hover .option-radio {
+            border-color: var(--primary);
+        }
+
+        .option.voted .option-radio {
+            border-color: var(--primary);
+            background: var(--primary);
+        }
+
+        .option.voted .option-radio::after {
+            content: '✓';
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .option-text {
+            flex: 1;
+        }
+
+        .option-result {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.5s ease;
+        }
+
+        .progress-percent {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--dark-text);
+            min-width: 45px;
+            text-align: right;
+        }
+
+        .poll-footer {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .poll-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Create Poll Screen */
+        .create-poll-container {
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .create-poll-form {
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 1rem;
+        }
+
+        .option-input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            align-items: center;
+        }
+
+        .option-input-group input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            background: var(--bg);
+            color: var(--dark-text);
+        }
+
+        .option-input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-remove {
+            background: #fee2e2;
+            color: #991b1b;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 8px;
+        }
+
+        .btn-remove:hover {
+            background: #fecaca;
+        }
+
+        .expiration-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+
+        .expiration-btn {
+            padding: 1rem;
+            border: 2px solid var(--border);
+            background: var(--bg);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            color: var(--dark-text);
+        }
+
+        .expiration-btn:hover {
+            border-color: var(--primary);
+            background: #f0f9ff;
+        }
+
+        .expiration-btn.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* Profile Screen */
+        .profile-container {
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .profile-header {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border);
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 auto 1rem;
+        }
+
+        .profile-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-email {
+            color: var(--light-text);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat {
+            background: var(--border);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--light-text);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .my-polls {
+            margin-top: 2rem;
+        }
+
+        .my-polls-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--light-text);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.3s ease;
+            border: 1px solid var(--border);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-content {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .share-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .share-option {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--bg);
+        }
+
+        .share-option:hover {
+            border-color: var(--primary);
+            background: #f0f9ff;
+        }
+
+        .share-option-icon {
+            font-size: 1.5rem;
+        }
+
+        .share-option-text {
+            flex: 1;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease;
+            z-index: 2000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .fade-out {
+            animation: fadeOut 0.3s ease forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(400px);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .auth-card {
+                padding: 1.5rem;
+            }
+
+            .polls-container {
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .poll-card {
+                padding: 1rem;
+            }
+
+            .search-box {
+                max-width: 100%;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+            .expiration-options {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="app-content">
+            <!-- Welcome Screen -->
+            <div id="welcomeScreen" class="screen active">
+                <div class="auth-container">
+                    <div class="auth-card">
+                        <div style="text-align: center; margin-bottom: 2rem;">
+                            <button class="btn btn-icon btn-outline" onclick="toggleDarkMode()" title="Toggle Dark Mode" id="darkModeToggleWelcome" style="align-self: flex-end; margin-bottom: 1rem;">🌙</button>
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">🗳️</div>
+                            <h1 class="auth-title">QuickPoll</h1>
+                            <p class="auth-subtitle">Create and vote on polls instantly</p>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="switchScreen('signupScreen')">Sign Up</button>
+                            <button class="btn btn-secondary" onclick="switchScreen('loginScreen')">Login</button>
+                            <button class="btn btn-outline" onclick="continueAsGuest()">Continue as Guest</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sign Up Screen -->
+            <div id="signupScreen" class="screen">
+                <div class="auth-container">
+                    <div class="auth-card">
+                        <button class="btn btn-outline btn-small" onclick="switchScreen('welcomeScreen')" style="margin-bottom: 2rem; width: auto; align-self: flex-start;">← Back</button>
+                        <h2 class="auth-title">Create Account</h2>
+                        <p class="auth-subtitle">Join QuickPoll and start creating polls</p>
+
+                        <form onsubmit="handleSignUp(event)">
+                            <div class="form-group">
+                                <label for="signupUsername">Username</label>
+                                <input type="text" id="signupUsername" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="signupEmail">Email</label>
+                                <input type="email" id="signupEmail" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="signupPassword">Password</label>
+                                <input type="password" id="signupPassword" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Sign Up</button>
+                        </form>
+
+                        <div class="divider">or</div>
+
+                        <p style="text-align: center; color: var(--light-text); font-size: 0.95rem;">
+                            Already have an account? <a href="#" onclick="switchScreen('loginScreen')" style="color: var(--primary); font-weight: 600; text-decoration: none;">Login</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Login Screen -->
+            <div id="loginScreen" class="screen">
+                <div class="auth-container">
+                    <div class="auth-card">
+                        <button class="btn btn-outline btn-small" onclick="switchScreen('welcomeScreen')" style="margin-bottom: 2rem; width: auto; align-self: flex-start;">← Back</button>
+                        <h2 class="auth-title">Login</h2>
+                        <p class="auth-subtitle">Welcome back to QuickPoll</p>
+
+                        <form onsubmit="handleLogin(event)">
+                            <div class="form-group">
+                                <label for="loginEmail">Email</label>
+                                <input type="email" id="loginEmail" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="loginPassword">Password</label>
+                                <input type="password" id="loginPassword" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </form>
+
+                        <div class="divider">or</div>
+
+                        <p style="text-align: center; color: var(--light-text); font-size: 0.95rem;">
+                            Don't have an account? <a href="#" onclick="switchScreen('signupScreen')" style="color: var(--primary); font-weight: 600; text-decoration: none;">Sign Up</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Home Screen -->
+            <div id="homeScreen" class="screen">
+                <div class="header">
+                    <div style="flex: 1;">
+                        <h2 class="header-title">QuickPoll</h2>
+                    </div>
+                    <div class="header-actions" style="flex: 1; justify-content: center;">
+                        <input type="text" class="search-box" id="searchInput" placeholder="Search polls..." onkeyup="handleSearch()">
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-accent btn-small" onclick="switchScreen('createPollScreen')">+ Create</button>
+                        <button class="btn btn-icon btn-outline" onclick="toggleDarkMode()" title="Toggle Dark Mode" id="darkModeToggle">🌙</button>
+                        <button class="btn btn-icon btn-primary" onclick="switchScreen('profileScreen')" title="Profile">👤</button>
+                        <button class="btn btn-icon btn-outline" onclick="logout()" title="Logout">🚪</button>
+                    </div>
+                </div>
+
+                <div class="polls-container" id="pollsList">
+                    <!-- Polls will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Create Poll Screen -->
+            <div id="createPollScreen" class="screen">
+                <div class="header">
+                    <button class="btn btn-outline btn-small" onclick="switchScreen('homeScreen')" style="width: auto;">← Back</button>
+                    <div class="header-title">Create a New Poll</div>
+                </div>
+
+                <div class="create-poll-container">
+                    <form class="create-poll-form" onsubmit="handleCreatePoll(event)">
+                        <div class="form-section">
+                            <label class="section-title">Poll Question</label>
+                            <div class="form-group">
+                                <input type="text" id="pollQuestion" placeholder="What do you want to ask?" required>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <label class="section-title">Options</label>
+                            <div id="optionsList">
+                                <div class="option-input-group">
+                                    <input type="text" class="poll-option-input" placeholder="Option 1" required>
+                                </div>
+                                <div class="option-input-group">
+                                    <input type="text" class="poll-option-input" placeholder="Option 2" required>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline btn-small" onclick="addOption()" style="margin-top: 1rem;">+ Add Option</button>
+                        </div>
+
+                        <div class="form-section">
+                            <label class="section-title">Poll Expires In</label>
+                            <div class="expiration-options" id="expirationOptions">
+                                <button type="button" class="expiration-btn" data-hours="24" onclick="selectExpiration(this)">24 hours</button>
+                                <button type="button" class="expiration-btn" data-hours="72" onclick="selectExpiration(this)">3 days</button>
+                                <button type="button" class="expiration-btn" data-hours="168" onclick="selectExpiration(this)">7 days</button>
+                            </div>
+                            <input type="hidden" id="selectedExpiration" value="24">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" onclick="switchScreen('homeScreen')">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Create Poll</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Profile Screen -->
+            <div id="profileScreen" class="screen">
+                <div class="header">
+                    <button class="btn btn-outline btn-small" onclick="switchScreen('homeScreen')" style="width: auto;">← Back</button>
+                    <div class="header-title">My Profile</div>
+                </div>
+
+                <div class="profile-container" id="profileContent">
+                    <!-- Profile will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal-overlay" id="shareModal">
+        <div class="modal">
+            <h3 class="modal-title">Share Poll</h3>
+            <div class="modal-content">
+                <p style="color: var(--light-text); margin-bottom: 1rem;">Choose how you'd like to share this poll:</p>
+                <div class="share-options">
+                    <div class="share-option" onclick="copyPollLink()">
+                        <span class="share-option-icon">🔗</span>
+                        <div class="share-option-text">
+                            <strong>Copy Link</strong>
+                            <p style="color: var(--light-text); font-size: 0.85rem;">Copy poll link to clipboard</p>
+                        </div>
+                    </div>
+                    <div class="share-option" onclick="sharePoll()">
+                        <span class="share-option-icon">📤</span>
+                        <div class="share-option-text">
+                            <strong>Share</strong>
+                            <p style="color: var(--light-text); font-size: 0.85rem;">Share via social or messaging</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeModal('shareModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Structure
+        let app = {
+            currentUser: null,
+            isGuest: false,
+            polls: [],
+            users: {}
+        };
+
+        // Initialize app with sample data
+        function initializeApp() {
+            // Load from localStorage
+            const savedData = localStorage.getItem('quickPollData');
+            if (savedData) {
+                app = JSON.parse(savedData);
+            } else {
+                // Create sample polls
+                app.polls = [
+                    {
+                        id: '1',
+                        question: 'What\'s your favorite programming language?',
+                        creator: 'sample_user',
+                        options: ['JavaScript', 'Python', 'Java', 'Rust'],
+                        votes: [25, 40, 20, 15],
+                        totalVotes: 100,
+                        userVotes: {},
+                        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+                        expiresAt: new Date(Date.now() + 22 * 60 * 60 * 1000),
+                        closed: false
+                    },
+                    {
+                        id: '2',
+                        question: 'Best time for a meeting?',
+                        creator: 'sample_user',
+                        options: ['Morning (9-12)', 'Afternoon (12-5)', 'Evening (5-8)'],
+                        votes: [45, 30, 25],
+                        totalVotes: 100,
+                        userVotes: {},
+                        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
+                        expiresAt: new Date(Date.now() + 19 * 60 * 60 * 1000),
+                        closed: false
+                    },
+                    {
+                        id: '3',
+                        question: 'Prefer working from home or office?',
+                        creator: 'sample_user',
+                        options: ['Home', 'Office', 'Hybrid'],
+                        votes: [60, 20, 20],
+                        totalVotes: 100,
+                        userVotes: {},
+                        createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
+                        expiresAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
+                        closed: true
+                    }
+                ];
+
+                app.users = {
+                    'sample_user': {
+                        username: 'sample_user',
+                        email: 'sample@quickpoll.app',
+                        createdPolls: ['1', '2', '3']
+                    }
+                };
+                saveData();
+            }
+
+            // Check if user is already logged in
+            const savedUser = localStorage.getItem('quickPollUser');
+            if (savedUser) {
+                app.currentUser = JSON.parse(savedUser);
+                switchScreen('homeScreen');
+                renderPolls();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('quickPollData', JSON.stringify(app));
+        }
+
+        function switchScreen(screenId) {
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            // Show selected screen
+            const screen = document.getElementById(screenId);
+            if (screen) {
+                screen.classList.add('active');
+            }
+
+            // Update page on screen change
+            if (screenId === 'homeScreen') {
+                renderPolls();
+            } else if (screenId === 'createPollScreen') {
+                if (!app.currentUser) {
+                    showToast('Please sign up to create polls');
+                    switchScreen('welcomeScreen');
+                    return;
+                }
+            } else if (screenId === 'profileScreen') {
+                renderProfile();
+            }
+        }
+
+        function handleSignUp(event) {
+            event.preventDefault();
+            const username = document.getElementById('signupUsername').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            if (app.users[username]) {
+                showToast('Username already exists');
+                return;
+            }
+
+            // Create new user
+            app.users[username] = {
+                username,
+                email,
+                password,
+                createdPolls: []
+            };
+
+            app.currentUser = { username, email };
+            saveData();
+            localStorage.setItem('quickPollUser', JSON.stringify(app.currentUser));
+
+            showToast('Account created successfully!');
+            switchScreen('homeScreen');
+            renderPolls();
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            // Find user by email
+            let foundUser = null;
+            for (let username in app.users) {
+                if (app.users[username].email === email && app.users[username].password === password) {
+                    foundUser = app.users[username];
+                    break;
+                }
+            }
+
+            if (!foundUser) {
+                showToast('Invalid email or password');
+                return;
+            }
+
+            app.currentUser = { username: foundUser.username, email: foundUser.email };
+            app.isGuest = false;
+            saveData();
+            localStorage.setItem('quickPollUser', JSON.stringify(app.currentUser));
+
+            showToast('Logged in successfully!');
+            switchScreen('homeScreen');
+            renderPolls();
+        }
+
+        function continueAsGuest() {
+            app.isGuest = true;
+            app.currentUser = null;
+            showToast('Exploring as guest - Sign up to create polls');
+            switchScreen('homeScreen');
+            renderPolls();
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                app.currentUser = null;
+                app.isGuest = false;
+                localStorage.removeItem('quickPollUser');
+                showToast('Logged out successfully');
+                switchScreen('welcomeScreen');
+            }
+        }
+
+        function renderPolls() {
+            const pollsList = document.getElementById('pollsList');
+            const searchTerm = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+
+            let filteredPolls = app.polls.filter(poll =>
+                poll.question.toLowerCase().includes(searchTerm)
+            );
+
+            if (filteredPolls.length === 0) {
+                pollsList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>No polls found</p></div>';
+                return;
+            }
+
+            pollsList.innerHTML = filteredPolls.map(poll => {
+                const hasVoted = poll.userVotes[app.currentUser?.username] !== undefined;
+                const userVoteIndex = poll.userVotes[app.currentUser?.username];
+                const isExpired = poll.closed || new Date() > poll.expiresAt;
+
+                return `
+                    <div class="poll-card">
+                        <div class="poll-header">
+                            <div>
+                                <h3 class="poll-question">${poll.question}</h3>
+                                <div class="poll-meta">
+                                    <span>by ${poll.creator}</span>
+                                    <span>${poll.totalVotes} votes</span>
+                                    <span class="poll-status ${isExpired ? '' : 'active'}">${isExpired ? '❌ Closed' : '✓ Active'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="poll-options">
+                            ${poll.options.map((option, index) => {
+                                const percentage = poll.totalVotes > 0 ? Math.round((poll.votes[index] / poll.totalVotes) * 100) : 0;
+                                const isUserVote = userVoteIndex === index;
+
+                                return `
+                                    <div class="option ${isUserVote ? 'voted' : ''}" ${!isExpired && !hasVoted ? `onclick="voteOnPoll('${poll.id}', ${index})"` : ''} style="${isExpired ? 'cursor: default;' : ''}">
+                                        <div class="option-content">
+                                            <div class="option-radio"></div>
+                                            <span class="option-text">${option}</span>
+                                        </div>
+                                        ${(hasVoted || isExpired) ? `
+                                            <div class="option-result">
+                                                <div class="progress-bar">
+                                                    <div class="progress-fill" style="width: ${percentage}%"></div>
+                                                </div>
+                                                <span class="progress-percent">${percentage}%</span>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+
+                        <div class="poll-footer">
+                            <span style="color: var(--light-text); font-size: 0.9rem;">
+                                Expires: ${formatTime(poll.expiresAt)}
+                            </span>
+                            ${!isExpired && !hasVoted ? `
+                                <div class="poll-actions">
+                                    <button class="btn btn-outline btn-small" onclick="openShareModal('${poll.id}')">Share</button>
+                                </div>
+                            ` : hasVoted ? `
+                                <span style="color: var(--success); font-weight: 600;">✓ You voted</span>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function voteOnPoll(pollId, optionIndex) {
+            if (app.isGuest) {
+                showToast('Sign up to vote on polls');
+                return;
+            }
+
+            if (!app.currentUser) {
+                showToast('Please log in to vote');
+                return;
+            }
+
+            const poll = app.polls.find(p => p.id === pollId);
+            if (!poll) return;
+
+            if (new Date() > poll.expiresAt) {
+                showToast('This poll has expired');
+                return;
+            }
+
+            // Record vote
+            poll.userVotes[app.currentUser.username] = optionIndex;
+            poll.votes[optionIndex]++;
+            poll.totalVotes++;
+
+            saveData();
+            renderPolls();
+            showToast('Vote recorded!');
+        }
+
+        function addOption() {
+            const optionsList = document.getElementById('optionsList');
+            const optionCount = optionsList.children.length + 1;
+
+            const newOption = document.createElement('div');
+            newOption.className = 'option-input-group';
+            newOption.innerHTML = `
+                <input type="text" class="poll-option-input" placeholder="Option ${optionCount}">
+                <button type="button" class="btn btn-remove" onclick="this.parentElement.remove()">✕</button>
+            `;
+            optionsList.appendChild(newOption);
+        }
+
+        function selectExpiration(button) {
+            document.querySelectorAll('.expiration-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            button.classList.add('selected');
+            document.getElementById('selectedExpiration').value = button.dataset.hours;
+        }
+
+        function handleCreatePoll(event) {
+            event.preventDefault();
+
+            const question = document.getElementById('pollQuestion').value;
+            const optionInputs = document.querySelectorAll('.poll-option-input');
+            const options = Array.from(optionInputs)
+                .map(input => input.value)
+                .filter(value => value.trim() !== '');
+
+            if (options.length < 2) {
+                showToast('Add at least 2 options');
+                return;
+            }
+
+            const expirationHours = parseInt(document.getElementById('selectedExpiration').value);
+            const pollId = Date.now().toString();
+
+            const newPoll = {
+                id: pollId,
+                question,
+                creator: app.currentUser.username,
+                options,
+                votes: new Array(options.length).fill(0),
+                totalVotes: 0,
+                userVotes: {},
+                createdAt: new Date(),
+                expiresAt: new Date(Date.now() + expirationHours * 60 * 60 * 1000),
+                closed: false
+            };
+
+            app.polls.push(newPoll);
+
+            // Add to user's created polls
+            if (!app.users[app.currentUser.username].createdPolls) {
+                app.users[app.currentUser.username].createdPolls = [];
+            }
+            app.users[app.currentUser.username].createdPolls.push(pollId);
+
+            saveData();
+            showToast('Poll created successfully!');
+
+            // Reset form
+            document.getElementById('pollQuestion').value = '';
+            document.querySelectorAll('.poll-option-input').forEach(input => input.value = '');
+            document.querySelectorAll('.expiration-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById('selectedExpiration').value = '24';
+
+            switchScreen('homeScreen');
+            renderPolls();
+        }
+
+        function renderProfile() {
+            const profileContent = document.getElementById('profileContent');
+
+            if (!app.currentUser) {
+                profileContent.innerHTML = '<div class="empty-state"><p>Please log in to view your profile</p></div>';
+                return;
+            }
+
+            const user = app.users[app.currentUser.username];
+            const userPolls = app.polls.filter(poll => poll.creator === app.currentUser.username);
+
+            const firstInitial = user.username.charAt(0).toUpperCase();
+
+            profileContent.innerHTML = `
+                <div class="profile-header">
+                    <div class="profile-avatar">${firstInitial}</div>
+                    <div class="profile-name">${user.username}</div>
+                    <div class="profile-email">${user.email}</div>
+
+                    <div class="profile-stats">
+                        <div class="stat">
+                            <div class="stat-number">${userPolls.length}</div>
+                            <div class="stat-label">Polls Created</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Votes Cast</div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-outline" onclick="switchScreen('homeScreen')" style="margin-top: 1.5rem;">Back to Home</button>
+                </div>
+
+                <div class="my-polls">
+                    <h3 class="my-polls-title">My Polls</h3>
+                    ${userPolls.length === 0 ? '<div class="empty-state"><p>You haven\'t created any polls yet</p></div>' : userPolls.map(poll => `
+                        <div class="poll-card">
+                            <div class="poll-question">${poll.question}</div>
+                            <div class="poll-meta">
+                                <span>${poll.totalVotes} votes</span>
+                                <span>${poll.options.length} options</span>
+                                <span class="poll-status ${poll.closed ? '' : 'active'}">${poll.closed ? '❌ Closed' : '✓ Active'}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function openShareModal(pollId) {
+            // Store current poll ID for sharing
+            window.currentPollId = pollId;
+            document.getElementById('shareModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function copyPollLink() {
+            const pollId = window.currentPollId;
+            const link = `${window.location.origin}?pollId=${pollId}`;
+            navigator.clipboard.writeText(link).then(() => {
+                showToast('Poll link copied!');
+                closeModal('shareModal');
+            });
+        }
+
+        function sharePoll() {
+            const poll = app.polls.find(p => p.id === window.currentPollId);
+            if (!poll) return;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: 'QuickPoll',
+                    text: `Vote on: ${poll.question}`,
+                    url: `${window.location.origin}?pollId=${poll.id}`
+                });
+                closeModal('shareModal');
+            } else {
+                showToast('Share feature not available on this device');
+            }
+        }
+
+        function handleSearch() {
+            renderPolls();
+        }
+
+        function formatTime(date) {
+            const now = new Date();
+            const diffMs = date - now;
+            const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+
+            if (diffHours < 0) {
+                return 'Expired';
+            } else if (diffHours < 1) {
+                return 'Less than 1 hour';
+            } else if (diffHours < 24) {
+                return `${diffHours}h`;
+            } else {
+                const diffDays = Math.round(diffHours / 24);
+                return `${diffDays}d`;
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function toggleDarkMode() {
+            const root = document.documentElement;
+            const isDarkMode = root.classList.contains('dark-mode');
+            
+            if (isDarkMode) {
+                root.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'false');
+                updateDarkModeToggles('🌙');
+            } else {
+                root.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'true');
+                updateDarkModeToggles('☀️');
+            }
+        }
+
+        function updateDarkModeToggles(icon) {
+            const toggle = document.getElementById('darkModeToggle');
+            const welcomeToggle = document.getElementById('darkModeToggleWelcome');
+            if (toggle) toggle.textContent = icon;
+            if (welcomeToggle) welcomeToggle.textContent = icon;
+        }
+
+        function loadDarkModePreference() {
+            const darkModeEnabled = localStorage.getItem('darkMode') === 'true';
+            if (darkModeEnabled) {
+                document.documentElement.classList.add('dark-mode');
+                updateDarkModeToggles('☀️');
+            }
+        }
+
+        // Initialize app on load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDarkModePreference();
+            initializeApp();
+        });
+
+        // Close modals when clicking outside
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('shareModal');
+            if (e.target === modal) {
+                closeModal('shareModal');
+            }
+        });
+    </script>
+</body>
+</html>
